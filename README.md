@@ -10,6 +10,30 @@ Spring Boot 4 기반 Product CRUD REST API 실습 프로젝트.
 
 ---
 
+## 컨테이너 아키텍처
+
+```mermaid
+graph LR
+    Client(["Client\n(Browser / curl)"])
+
+    subgraph Docker["Docker Compose"]
+        direction LR
+        App["app\nhello-springboot-app\nSpring Boot · :8080"]
+        DB[("db\nhello-springboot-db\nMySQL 8.0 · :3306")]
+        Vol[("mysql-data\nNamed Volume")]
+
+        App -- "JDBC (spring-net)" --> DB
+        DB -. "persist" .-> Vol
+    end
+
+    Client -- "HTTP :8080" --> App
+```
+
+> `app` 컨테이너는 DB healthcheck 통과 후 기동됩니다 (`depends_on: service_healthy`).  
+> 두 컨테이너는 내부 브리지 네트워크 `spring-net`으로만 연결되어 외부에서 DB에 직접 접근할 수 없습니다.
+
+---
+
 ## 기술 스택
 
 | 항목 | 내용 |
