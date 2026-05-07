@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(./mvnw spring-boot:run)",
+      "Bash(docker compose *)",
+      "Bash(curl -s http://localhost:8080/actuator/health)",
+      "Bash(curl -s http://localhost:8080/api/products)",
+      "Bash(curl -s -X POST http://localhost:8080/api/products -H 'Content-Type: application/json' -d '{\"name\": \"노트북\", \"price\": 1500000, \"description\": \"고성능 개발용 노트북\"}')",
+      "Bash(python -m json.tool)",
+      "Bash(curl -s -X POST http://localhost:8080/api/products -H 'Content-Type: application/json' -d '{\"name\":\"Laptop\",\"price\":1500000,\"description\":\"High-performance laptop\"}')",
+      "Bash(curl -s -X POST http://localhost:8080/api/products -H 'Content-Type: application/json' --data-binary @-)",
+      "Bash(python *)",
+      "Bash(pip install *)"
+    ]
+  }
+}

@@ -1,0 +1,49 @@
+services:
+
+  # Spring Boot application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: hello-springboot-app
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_URL: jdbc:mysql://db:3306/hellodb?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      DB_USERNAME: root
+      DB_PASSWORD: 1234
+    depends_on:
+      db:
+        condition: service_healthy   # wait until MySQL passes its health check
+    networks:
+      - spring-net
+    restart: unless-stopped
+
+  # MySQL 8.0 database
+  db:
+    image: mysql:8.0
+    container_name: hello-springboot-db
+    environment:
+      MYSQL_ROOT_PASSWORD: 1234
+      MYSQL_DATABASE: hellodb
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql   # named volume keeps data across restarts
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p1234"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - spring-net
+    restart: unless-stopped
+
+volumes:
+  mysql-data:
+
+networks:
+  spring-net:
+    driver: bridge
