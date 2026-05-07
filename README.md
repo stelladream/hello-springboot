@@ -93,18 +93,38 @@ hello-springboot/
 
 ## 실행 방법
 
-### Docker Compose 실행 (권장)
+### 개발 중 권장 워크플로우
+
+코드를 수정할 때마다 이미지를 다시 빌드하면 시간이 오래 걸립니다.  
+**Docker는 DB만 띄우고, 앱은 로컬에서 직접 실행**하는 방식을 권장합니다.
+
+```bash
+# 1. DB 컨테이너만 실행
+docker compose up -d db
+
+# 2. 앱은 IntelliJ에서 실행하거나 아래 명령어 사용
+./mvnw spring-boot:run
+
+# 또는 Fat JAR 빌드 후 실행
+./mvnw package -DskipTests
+java -jar target/hello-springboot-0.0.1-SNAPSHOT.jar
+
+```
+
+- 코드 수정 후 IntelliJ 재시작만 하면 즉시 반영됩니다.
+- DB 컨테이너는 계속 살아 있으므로 매번 다시 띄울 필요가 없습니다.
+- `dev` 프로파일 기준으로 실행되며, 앱 시작 시 `data.sql`로 샘플 데이터가 자동 삽입됩니다.
+
+> `docker compose up --build`는 최종 배포 확인용으로만 사용합니다.
+
+---
+
+### Docker Compose 전체 실행 (배포 확인용)
 
 MySQL 컨테이너와 Spring Boot 앱을 함께 기동합니다.
 
 ```bash
-# 1. 환경 초기화 (기존 컨테이너·볼륨 완전 삭제)
-docker compose down -v
-
-# 2. 이미지 빌드 및 컨테이너 시작
-docker compose up --build
-
-# 백그라운드로 실행
+# 이미지 빌드 및 컨테이너 시작
 docker compose up --build -d
 
 # 로그 확인
@@ -119,18 +139,14 @@ docker compose down -v
 
 > DB healthcheck 통과 후 앱이 시작됩니다 — `depends_on: condition: service_healthy`
 
-### 로컬 실행 (dev 프로파일)
+### 로컬 실행 (DB 없이 시작하는 경우)
 
 ```bash
-# 1. MySQL에서 데이터베이스 생성
+# 1. MySQL에서 데이터베이스 생성 (최초 1회)
 CREATE DATABASE hellodb CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
-# 2. 애플리케이션 실행 (기본 프로파일: dev)
+# 2. 애플리케이션 실행
 ./mvnw spring-boot:run
-
-# 또는 Fat JAR 빌드 후 실행
-./mvnw package -DskipTests
-java -jar target/hello-springboot-0.0.1-SNAPSHOT.jar
 ```
 
 ### 테스트 실행
@@ -233,16 +249,17 @@ HTTP/1.1 404 Not Found
 
 ---
 
-## 환경변수 (prod 프로파일)
+## 환경변수
 
-Docker Compose 또는 운영 환경에서 아래 환경변수를 설정합니다.
+Docker Compose 또는 운영 환경에서 아래 환경변수를 설정합니다.  
+Spring Boot는 환경변수가 `application*.properties`보다 우선 적용됩니다.
 
 | 환경변수 | 설명 | 예시 |
 |----------|------|------|
-| `SPRING_PROFILES_ACTIVE` | 활성 프로파일 | `prod` |
-| `DB_URL` | MySQL JDBC URL | `jdbc:mysql://db:3306/hellodb?useSSL=false&serverTimezone=UTC` |
-| `DB_USERNAME` | DB 사용자 이름 | `root` |
-| `DB_PASSWORD` | DB 비밀번호 | `1234` |
+| `SPRING_PROFILES_ACTIVE` | 활성 프로파일 | `dev` |
+| `SPRING_DATASOURCE_URL` | MySQL JDBC URL | `jdbc:mysql://db:3306/hellodb?useSSL=false&serverTimezone=UTC` |
+| `SPRING_DATASOURCE_USERNAME` | DB 사용자 이름 | `root` |
+| `SPRING_DATASOURCE_PASSWORD` | DB 비밀번호 | `1234` |
 
 ---
 
@@ -250,7 +267,8 @@ Docker Compose 또는 운영 환경에서 아래 환경변수를 설정합니다
 
 | 항목 | `dev` | `prod` |
 |------|-------|--------|
-| DB 접속 | `localhost:3306` | 환경변수 `${DB_URL}` |
+| 사용 환경 | 로컬 개발, Docker Compose | 실제 운영 |
+| DB 접속 | `localhost:3306` (환경변수로 오버라이드 가능) | 환경변수 `${SPRING_DATASOURCE_URL}` |
 | `ddl-auto` | `create-drop` (매 시작마다 초기화) | `update` (스키마 변경만 반영) |
 | SQL 로그 | ON | OFF |
 | `data.sql` 실행 | O | X |
