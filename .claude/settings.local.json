@@ -10,7 +10,26 @@
       "Bash(curl -s -X POST http://localhost:8080/api/products -H 'Content-Type: application/json' -d '{\"name\":\"Laptop\",\"price\":1500000,\"description\":\"High-performance laptop\"}')",
       "Bash(curl -s -X POST http://localhost:8080/api/products -H 'Content-Type: application/json' --data-binary @-)",
       "Bash(python *)",
-      "Bash(pip install *)"
+      "Bash(pip install *)",
+      "Bash(netstat -ano)",
+      "Bash(findstr :8080)",
+      "Bash(tasklist /FI \"PID eq 12600\")",
+      "Bash(tasklist /FI \"PID eq 5328\")",
+      "Bash(tasklist /FI \"PID eq 31468\")",
+      "PowerShell(Get-Process *)",
+      "PowerShell(Get-NetTCPConnection *)",
+      "Bash(docker stop *)",
+      "Bash(docker network *)",
+      "Bash(mvn --version)",
+      "Bash(java -version)",
+      "Bash(mvn spring-boot:run)",
+      "Bash(echo \"PID: $!\")",
+      "PowerShell(Stop-Service *)",
+      "PowerShell(Stop-Process *)",
+      "PowerShell(netstat *)",
+      "PowerShell(taskkill *)",
+      "PowerShell(Start-Process taskkill -ArgumentList \"/PID 5328 /F\" -Verb RunAs -Wait)",
+      "PowerShell(net stop *)"
     ]
   }
 }

@@ -2,7 +2,7 @@
 
 ![Spring Boot](https://img.shields.io/badge/Spring_Boot-4.0.6-6DB33F?style=flat&logo=springboot&logoColor=white)
 ![Java](https://img.shields.io/badge/Java-21_LTS-ED8B00?style=flat&logo=openjdk&logoColor=white)
-![MySQL](https://img.shields.io/badge/MySQL-8.0-4479A1?style=flat&logo=mysql&logoColor=white)
+![MySQL](https://img.shields.io/badge/MySQL-9.0-4479A1?style=flat&logo=mysql&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=flat&logo=docker&logoColor=white)
 
 Spring Boot 4 기반 Product CRUD REST API 실습 프로젝트.  
@@ -19,7 +19,7 @@ graph LR
     subgraph Docker["Docker Compose"]
         direction LR
         App["app\nhello-springboot-app\nSpring Boot · :8080"]
-        DB[("db\nhello-springboot-db\nMySQL 8.0 · :3306")]
+        DB[("db\nhello-springboot-db\nMySQL 9.0 · :3306")]
         Vol[("mysql-data\nNamed Volume")]
 
         App -- "JDBC (spring-net)" --> DB
@@ -41,7 +41,7 @@ graph LR
 | Java | 21 LTS — Virtual Threads (Project Loom) |
 | Spring Boot | 4.0.6 (Spring Framework 7.0.7) |
 | ORM | Spring Data JPA + Hibernate 7.2.12 |
-| Database | MySQL 8.0 (Docker), H2 (테스트) |
+| Database | MySQL 9.0 (Docker), H2 (테스트) |
 | Build | Maven — Fat JAR (내장 Tomcat) |
 | Container | Docker + Docker Compose |
 | Monitoring | Spring Boot Actuator |
@@ -87,41 +87,37 @@ hello-springboot/
 | Docker Desktop | 4.x 이상 | `docker --version` |
 | Java JDK | 21 이상 | `java -version` |
 
-> 로컬 실행 시 MySQL 8.0이 추가로 필요합니다.
+> 로컬 실행 시 MySQL은 `docker compose up -d db`로 대신합니다.
 
 ---
 
 ## 실행 방법
 
-### 개발 중 권장 워크플로우
+### 로컬 실행 (개발 권장)
 
 코드를 수정할 때마다 이미지를 다시 빌드하면 시간이 오래 걸립니다.  
 **Docker는 DB만 띄우고, 앱은 로컬에서 직접 실행**하는 방식을 권장합니다.
 
 ```bash
-# 1. DB 컨테이너만 실행
+# 1. MySQL 컨테이너만 실행
 docker compose up -d db
 
-# 2. 앱은 IntelliJ에서 실행하거나 아래 명령어 사용
+# 2-A. IntelliJ에서 HelloSpringBootApplication 실행 (dev 프로파일 자동 적용)
+
+# 2-B. 또는 터미널에서 실행
 ./mvnw spring-boot:run
-
-# 또는 Fat JAR 빌드 후 실행
-./mvnw package -DskipTests
-java -jar target/hello-springboot-0.0.1-SNAPSHOT.jar
-
 ```
 
+- `dev` 프로파일로 실행되며, 앱 시작 시 `data.sql` 샘플 데이터가 자동 삽입됩니다.
+- DB 컨테이너는 유지되므로 매번 다시 띄울 필요가 없습니다.
 - 코드 수정 후 IntelliJ 재시작만 하면 즉시 반영됩니다.
-- DB 컨테이너는 계속 살아 있으므로 매번 다시 띄울 필요가 없습니다.
-- `dev` 프로파일 기준으로 실행되며, 앱 시작 시 `data.sql`로 샘플 데이터가 자동 삽입됩니다.
-
-> `docker compose up --build`는 최종 배포 확인용으로만 사용합니다.
 
 ---
 
-### Docker Compose 전체 실행 (배포 확인용)
+### Docker Compose 전체 실행 (Docker 환경 테스트)
 
-MySQL 컨테이너와 Spring Boot 앱을 함께 기동합니다.
+MySQL과 Spring Boot 앱을 모두 컨테이너로 기동합니다.  
+`dev` 프로파일로 실행되며 앱 시작 시 `data.sql` 샘플 데이터가 자동 삽입됩니다.
 
 ```bash
 # 이미지 빌드 및 컨테이너 시작
@@ -137,17 +133,9 @@ docker compose down
 docker compose down -v
 ```
 
-> DB healthcheck 통과 후 앱이 시작됩니다 — `depends_on: condition: service_healthy`
+> DB healthcheck 통과 후 앱이 시작됩니다 (`depends_on: condition: service_healthy`).
 
-### 로컬 실행 (DB 없이 시작하는 경우)
-
-```bash
-# 1. MySQL에서 데이터베이스 생성 (최초 1회)
-CREATE DATABASE hellodb CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-
-# 2. 애플리케이션 실행
-./mvnw spring-boot:run
-```
+---
 
 ### 테스트 실행
 
@@ -251,15 +239,29 @@ HTTP/1.1 404 Not Found
 
 ## 환경변수
 
-Docker Compose 또는 운영 환경에서 아래 환경변수를 설정합니다.  
 Spring Boot는 환경변수가 `application*.properties`보다 우선 적용됩니다.
+
+### dev 프로파일 (docker-compose.yml)
+
+Docker 내부에서는 `localhost` 대신 서비스명 `db`로 접속해야 하므로 아래 환경변수로 URL을 override합니다.
+
+| 환경변수 | 설명 | 값 |
+|----------|------|----|
+| `SPRING_PROFILES_ACTIVE` | 활성 프로파일 | `dev` |
+| `SPRING_DATASOURCE_URL` | Docker 내부 JDBC URL | `jdbc:mysql://db:3306/hellodb?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true` |
+| `SPRING_DATASOURCE_USERNAME` | DB 사용자 이름 | `root` |
+| `SPRING_DATASOURCE_PASSWORD` | DB 비밀번호 | `1234` |
+
+### prod 프로파일 (application-prod.properties)
+
+운영 배포 시 아래 환경변수를 외부에서 주입합니다 (Docker, Kubernetes Secret 등).
 
 | 환경변수 | 설명 | 예시 |
 |----------|------|------|
-| `SPRING_PROFILES_ACTIVE` | 활성 프로파일 | `dev` |
-| `SPRING_DATASOURCE_URL` | MySQL JDBC URL | `jdbc:mysql://db:3306/hellodb?useSSL=false&serverTimezone=UTC` |
-| `SPRING_DATASOURCE_USERNAME` | DB 사용자 이름 | `root` |
-| `SPRING_DATASOURCE_PASSWORD` | DB 비밀번호 | `1234` |
+| `SPRING_PROFILES_ACTIVE` | 활성 프로파일 | `prod` |
+| `DB_URL` | MySQL JDBC URL | `jdbc:mysql://db:3306/hellodb?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true` |
+| `DB_USERNAME` | DB 사용자 이름 | `root` |
+| `DB_PASSWORD` | DB 비밀번호 | *(secret)* |
 
 ---
 
@@ -267,11 +269,11 @@ Spring Boot는 환경변수가 `application*.properties`보다 우선 적용됩�
 
 | 항목 | `dev` | `prod` |
 |------|-------|--------|
-| 사용 환경 | 로컬 개발, Docker Compose | 실제 운영 |
-| DB 접속 | `localhost:3306` (환경변수로 오버라이드 가능) | 환경변수 `${SPRING_DATASOURCE_URL}` |
-| `ddl-auto` | `create-drop` (매 시작마다 초기화) | `update` (스키마 변경만 반영) |
+| 사용 환경 | 로컬 개발, Docker Compose 테스트 | 실제 운영 배포 |
+| DB 접속 | `localhost:3306` (Docker 실행 시 `SPRING_DATASOURCE_URL`로 override) | 환경변수 `${DB_URL}` |
+| `ddl-auto` | `create-drop` (매 시작마다 스키마 초기화) | `update` (스키마 변경만 반영) |
 | SQL 로그 | ON | OFF |
-| `data.sql` 실행 | O | X |
+| `data.sql` 실행 | O (자동 삽입) | X (`sql.init.mode=never`) |
 | 로그 레벨 | `DEBUG` | `INFO` |
 
 ---

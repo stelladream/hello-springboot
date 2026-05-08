@@ -1,6 +1,6 @@
 services:
 
-  # Spring Boot application
+  # Spring Boot application (prod profile)
   app:
     build:
       context: .
@@ -15,14 +15,15 @@ services:
       SPRING_DATASOURCE_PASSWORD: 1234
     depends_on:
       db:
-        condition: service_healthy   # wait until MySQL passes its health check
+        condition: service_healthy
     networks:
       - spring-net
     restart: unless-stopped
 
-  # MySQL 8.0 database
+  # MySQL 9.0 database
+  # Also exposed on localhost:3306 for local dev (IntelliJ + dev profile)
   db:
-    image: mysql:8.0
+    image: mysql:9.0
     container_name: hello-springboot-db
     environment:
       MYSQL_ROOT_PASSWORD: 1234
@@ -30,7 +31,7 @@ services:
     ports:
       - "3306:3306"
     volumes:
-      - mysql-data:/var/lib/mysql   # named volume keeps data across restarts
+      - mysql-data:/var/lib/mysql
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p1234"]
       interval: 10s
